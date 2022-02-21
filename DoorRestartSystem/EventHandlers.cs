@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.Events.EventArgs;
 using Interactables.Interobjects.DoorUtils;
@@ -10,8 +11,8 @@ namespace DoorRestartSystem
 	class EventHandlers
 	{
 		private CoroutineHandle coroutine;
-		private List<DoorVariant> brokenDoors = new List<DoorVariant>();
-		private List<DoorVariant> doors = new List<DoorVariant>();
+		private List<Door> brokenDoors = new List<Door>();
+		private List<Door> doors = new List<Door>();
 		private bool isRestarting = false;
 		private bool isRoundStarted = false;
 
@@ -34,15 +35,15 @@ namespace DoorRestartSystem
 
 		public void OnRoundEnd(RoundEndedEventArgs ev) => isRoundStarted = false;
 
-		private IEnumerator<float> BreakDoor(DoorVariant door)
+		private IEnumerator<float> BreakDoor(Door door)
 		{
 			doors.Remove(door);
 			brokenDoors.Add(door);
 			yield return Timing.WaitForSeconds(0.7f);
 			if (isRestarting)
 			{
-				door.NetworkTargetState = !door.NetworkTargetState;
-				door.ServerChangeLock(DoorLockReason.AdminCommand, door.ActiveLocks > 0 ? false : true);
+				door.IsOpen = !door.IsOpen;
+				door.ChangeLock(door.IsLocked ? DoorLockType.None : DoorLockType.AdminCommand);
 			}
 			doors.Add(door);
 			brokenDoors.Remove(door);
@@ -57,31 +58,31 @@ namespace DoorRestartSystem
 				{
 					DoorVariant scp106door = DoorNametagExtension.NamedDoors["106_PRIMARY"].TargetDoor;
 					DoorVariant scp106door2 = DoorNametagExtension.NamedDoors["106_SECONDARY"].TargetDoor;
-					foreach (DoorVariant door in Map.Doors.Where(x => x.transform.position != scp106door.transform.position && x.transform.position != scp106door2.transform.position)) doors.Add(door);
+					foreach (Door door in Door.Get(x => x.Position != scp106door.transform.position && x.Position != scp106door2.transform.position)) doors.Add(door);
 
 					if (!Warhead.IsInProgress && !Warhead.IsDetonated)
 					{
 						isRestarting = true;
 						Timing.CallDelayed(delay, () => isRestarting = false);
 						Cassie.Message("CRITICAL ERROR . . DOOR SYSTEM MALFUNCTION IN PROGRESS . . DOOR SYSTEM SOFTWARE REPAIR COMMENCING IN 3 . 2 . 1 . . . . . . . DOOR SYSTEM REPAIR COMPLETE", true, true);
-						List<DoorVariant> openDoors = new List<DoorVariant>();
-						foreach (DoorVariant door in Map.Doors) if (door.IsConsideredOpen()) openDoors.Add(door);
+						List<Door> openDoors = new List<Door>();
+						foreach (Door door in Door.List) if (door.IsOpen) openDoors.Add(door);
 						while (isRestarting)
 						{
-							DoorVariant door = doors[UnityEngine.Random.Range(0, doors.Count)];
+							Door door = doors[UnityEngine.Random.Range(0, doors.Count)];
 							Timing.RunCoroutine(BreakDoor(door));
 							yield return Timing.WaitForSeconds(0.05f);
 						}
-						foreach (DoorVariant door in Map.Doors)
+						foreach (Door door in Door.List)
 						{
-							door.NetworkTargetState = false;
-							door.ServerChangeLock(DoorLockReason.AdminCommand, true);
+							door.IsOpen = false;
+							door.ChangeLock(DoorLockType.AdminCommand);
 						}
 						yield return Timing.WaitForSeconds(3f);
-						foreach (DoorVariant door in Map.Doors)
+						foreach (Door door in Door.List)
 						{
-							door.NetworkTargetState = openDoors.Contains(door);
-							door.ServerChangeLock(DoorLockReason.AdminCommand, false);
+							door.IsOpen = openDoors.Contains(door);
+							door.ChangeLock(DoorLockType.AdminCommand);
 						}
 						brokenDoors.Clear();
 					}
