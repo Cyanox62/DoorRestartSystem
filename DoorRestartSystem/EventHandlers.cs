@@ -66,7 +66,10 @@ namespace DoorRestartSystem
 						Timing.CallDelayed(delay, () => isRestarting = false);
 						Cassie.Message("CRITICAL ERROR . . DOOR SYSTEM MALFUNCTION IN PROGRESS . . DOOR SYSTEM SOFTWARE REPAIR COMMENCING IN 3 . 2 . 1 . . . . . . . DOOR SYSTEM REPAIR COMPLETE", true, true);
 						List<Door> openDoors = new List<Door>();
-						foreach (Door door in Door.List) if (door.IsOpen) openDoors.Add(door);
+						foreach (Door door in Door.List)
+						{
+							if (door.IsOpen) openDoors.Add(door);
+						}
 						while (isRestarting)
 						{
 							Door door = doors[UnityEngine.Random.Range(0, doors.Count)];
@@ -82,7 +85,7 @@ namespace DoorRestartSystem
 						foreach (Door door in Door.List)
 						{
 							door.IsOpen = openDoors.Contains(door);
-							door.ChangeLock(DoorLockType.AdminCommand);
+							door.ChangeLock(DoorLockType.None);
 						}
 						brokenDoors.Clear();
 					}
