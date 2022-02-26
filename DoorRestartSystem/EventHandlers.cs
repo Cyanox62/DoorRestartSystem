@@ -16,6 +16,12 @@ namespace DoorRestartSystem
 		private bool isRestarting = false;
 		private bool isRoundStarted = false;
 
+		private List<DoorType> typeBlacklist = new List<DoorType>()
+		{
+			DoorType.Scp079First,
+			DoorType.Scp079Second
+		};
+
 		private const float delay = 15.03f;
 
 		public void OnRoundRestart()
@@ -58,7 +64,7 @@ namespace DoorRestartSystem
 				{
 					DoorVariant scp106door = DoorNametagExtension.NamedDoors["106_PRIMARY"].TargetDoor;
 					DoorVariant scp106door2 = DoorNametagExtension.NamedDoors["106_SECONDARY"].TargetDoor;
-					foreach (Door door in Door.Get(x => x.Position != scp106door.transform.position && x.Position != scp106door2.transform.position)) doors.Add(door);
+					foreach (Door door in Door.Get(x => x.Position != scp106door.transform.position && x.Position != scp106door2.transform.position && !typeBlacklist.Contains(x.Type) && !x.Base.name.Contains("914"))) doors.Add(door);
 
 					if (!Warhead.IsInProgress && !Warhead.IsDetonated)
 					{
